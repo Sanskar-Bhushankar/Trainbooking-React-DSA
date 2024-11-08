@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import PriorityQueue from '../utils/PriorityQueue';
 import '../styles/TrainBooking.css';
+import coachImage from '../assets/coach-image.webp';
+import trackImage from '../assets/track-image.png';
 
 const BookingModal = ({ onSubmit, onCancel, selectedSeat, formData, setFormData }) => (
   <div className="modal-overlay" onClick={onCancel}>
@@ -194,16 +196,22 @@ const TrainBooking = () => {
     <div className="train-booking">
       <h1>Train Seat Booking System</h1>
       
-      <div className="train-display">
-        {Object.keys(seats).map(coachId => (
-          <div
-            key={coachId}
-            className={`coach-button ${activeCoach === coachId ? 'active' : ''}`}
-            onClick={() => handleCoachClick(coachId)}
-          >
-            Coach {coachId}
-          </div>
-        ))}
+      <div className="train-container">
+        <div className="train-display">
+          {Object.keys(seats).map((coachId) => (
+            <div
+              key={coachId}
+              className={`coach-button ${activeCoach === coachId ? 'active' : ''}`}
+              onClick={() => handleCoachClick(coachId)}
+            >
+              <img src={coachImage} alt={`Coach ${coachId}`} className="coach-image" />
+              <div className="coach-label">Coach {coachId}</div>
+            </div>
+          ))}
+        </div>
+        <div className="track-container">
+          <img src={trackImage} alt="Railway Track" className="track-image" />
+        </div>
       </div>
 
       {activeCoach && (

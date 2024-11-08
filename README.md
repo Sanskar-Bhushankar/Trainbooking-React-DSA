@@ -1,70 +1,63 @@
-# Getting Started with Create React App
+# Train Seat Booking System 🚂
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A React-based train seat booking system that simulates Indian Railways' booking process with intelligent seat allocation and elderly passenger priority.
 
-## Available Scripts
+## Features 🌟
 
-In the project directory, you can run:
+- **Interactive Train Visualization**: Visual representation of train coaches with real-time seat availability
+- **Smart Seat Allocation**: Prioritizes lower berths for elderly passengers (age >= 40)
+- **Multi-Coach Management**: Handles booking across multiple coaches
+- **Age-based Priority System**: Suggests alternative lower berths in other coaches for elderly passengers
 
-### `npm start`
+## Technical Implementation 🛠️
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### Priority Queue Implementation
+The system uses a Priority Queue to handle elderly passenger bookings:
+- Passengers aged 40 and above get higher priority
+- When a non-lower berth is selected by an elderly passenger:
+  1. Checks current coach for available lower berths
+  2. If not found, searches other coaches
+  3. Suggests available lower berths to the passenger
+  4. Maintains queue based on age priority
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## User Interface 🎨
 
-### `npm test`
+- Clean and intuitive design
+- Visual coach selection
+- Real-time seat availability updates
+- Interactive booking modal
+- Clear status indicators
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## How It Works 🔄
 
-### `npm run build`
+1. **Coach Selection**
+   - Click on any coach to view its seat layout
+   - Visual indicators show available and booked seats
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+2. **Booking Process**
+   - Select an available seat
+   - Enter passenger details
+   - System checks age for berth allocation
+   - Suggests alternatives if better options available
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+3. **Priority Handling**
+   - Elderly passengers (≥40 years) get priority for lower berths
+   - System automatically searches all coaches for suitable seats
+   - Option to accept or decline alternative suggestions
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## Technical Stack 💻
 
-### `npm run eject`
+- React.js
+- CSS3
+- Priority Queue Data Structure
+- Binary Tree Data Structure
+- JavaScript ES6+
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## Future Enhancements 🚀
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+- [ ] Add waitlist functionality
+- [ ] Implement seat swapping
+- [ ] Include cancellation feature
+- [ ] Add print ticket functionality
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)

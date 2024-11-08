@@ -1,12 +1,89 @@
 import React, { useState, useEffect } from 'react';
 import PriorityQueue from '../utils/PriorityQueue';
-import SeatTree from '../utils/SeatTree';
 import '../styles/TrainBooking.css';
 
+const BookingModal = ({ onSubmit, onCancel, selectedSeat, formData, setFormData }) => (
+  <div className="modal-overlay" onClick={onCancel}>
+    <div className="modal-content" onClick={e => e.stopPropagation()}>
+      <div className="modal-header">
+        <h2>Book Your Seat</h2>
+      </div>
+      
+      <div className="selected-seat-info">
+        Selected: {selectedSeat.berthType.toUpperCase()} Berth - Section {selectedSeat.section}
+      </div>
+
+      <form className="booking-form" onSubmit={onSubmit}>
+        <div className="form-group">
+          <label htmlFor="name">Passenger Name</label>
+          <input
+            id="name"
+            type="text"
+            value={formData.name}
+            onChange={e => setFormData({...formData, name: e.target.value})}
+            required
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="age">Age</label>
+          <input
+            id="age"
+            type="number"
+            value={formData.age}
+            onChange={e => setFormData({...formData, age: e.target.value})}
+            required
+            min="1"
+            max="120"
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="gender">Gender</label>
+          <select
+            id="gender"
+            value={formData.gender}
+            onChange={e => setFormData({...formData, gender: e.target.value})}
+            required
+          >
+            <option value="">Select Gender</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+
+        <div className="button-group">
+          <button type="submit">Confirm Booking</button>
+          <button type="button" onClick={onCancel}>Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+);
+
+// eslint-disable-next-line
 const TrainBooking = () => {
-  const [seatTree] = useState(new SeatTree());
+  // eslint-disable-next-line
   const [priorityQueue] = useState(new PriorityQueue());
-  const [seats, setSeats] = useState(new Map());
+  
+  const createCoachSeats = () => {
+    const sections = {};
+    for (let i = 0; i < 21; i += 3) {
+      const sectionKey = `${i}-${Math.min(i + 2, 20)}`;
+      sections[sectionKey] = { upper: null, middle: null, lower: null };
+    }
+    return sections;
+  };
+
+  const [activeCoach, setActiveCoach] = useState(null);
+  const [seats, setSeats] = useState({
+    'A1': createCoachSeats(),
+    'A2': createCoachSeats(),
+    'A3': createCoachSeats(),
+    'A4': createCoachSeats(),
+    'A5': createCoachSeats()
+  });
   const [showForm, setShowForm] = useState(false);
   const [selectedSeat, setSelectedSeat] = useState(null);
   const [formData, setFormData] = useState({
@@ -15,22 +92,35 @@ const TrainBooking = () => {
     gender: ''
   });
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    updateSeatsDisplay();
+    // Initialize any necessary state
   }, []);
 
-  const updateSeatsDisplay = () => {
-    const newSeats = new Map();
-    for (let row = 1; row <= 10; row++) {
-      const rowSeats = seatTree.rows.get(row);
-      newSeats.set(row, rowSeats);
-    }
-    setSeats(newSeats);
+  const handleCoachClick = (coachId) => {
+    setActiveCoach(activeCoach === coachId ? null : coachId);
+    setShowForm(false);
+    setSelectedSeat(null);
   };
 
-  const handleSeatClick = (type, row) => {
-    setSelectedSeat({ type, row });
+  const handleSeatClick = (section, berthType) => {
+    setSelectedSeat({ section, berthType });
     setShowForm(true);
+  };
+
+  const findAvailableLowerBerth = () => {
+    // Check all coaches for available lower berths
+    for (const coachId of Object.keys(seats)) {
+      if (coachId === activeCoach) continue; // Skip current coach
+      
+      // Check each section in the coach
+      for (const [section, berths] of Object.entries(seats[coachId])) {
+        if (!berths.lower) {
+          return { coachId, section };
+        }
+      }
+    }
+    return null;
   };
 
   const handleBooking = async (e) => {
@@ -38,37 +128,63 @@ const TrainBooking = () => {
     const age = parseInt(formData.age);
     const passenger = { ...formData, age };
 
-    if (age >= 40 && selectedSeat.type !== 'lower') {
-      const lowerSeat = seatTree.findAvailableLowerBerth();
-      if (lowerSeat) {
-        const wantsLower = await showLowerBerthPrompt();
+    if (age >= 40 && selectedSeat.berthType !== 'lower') {
+      priorityQueue.enqueue(passenger);
+      
+      // First check current coach
+      const availableLowerSection = Object.keys(seats[activeCoach]).find(
+        section => !seats[activeCoach][section].lower
+      );
+
+      if (availableLowerSection) {
+        const wantsLower = window.confirm(
+          'A lower berth is available in the current coach. Would you like to book the lower berth instead?'
+        );
+        
         if (wantsLower) {
-          processBooking('lower', lowerSeat.row, passenger);
-          return;
+          selectedSeat.berthType = 'lower';
+          selectedSeat.section = availableLowerSection;
+        }
+      } else {
+        // Check other coaches
+        const availableInOtherCoach = findAvailableLowerBerth();
+        
+        if (availableInOtherCoach) {
+          const wantsOtherCoach = window.confirm(
+            `A lower berth is available in Coach ${availableInOtherCoach.coachId}, Section ${availableInOtherCoach.section}. Would you like to book that instead?`
+          );
+
+          if (wantsOtherCoach) {
+            // Book in the other coach
+            setSeats(prevSeats => ({
+              ...prevSeats,
+              [availableInOtherCoach.coachId]: {
+                ...prevSeats[availableInOtherCoach.coachId],
+                [availableInOtherCoach.section]: {
+                  ...prevSeats[availableInOtherCoach.coachId][availableInOtherCoach.section],
+                  lower: passenger
+                }
+              }
+            }));
+            setShowForm(false);
+            setFormData({ name: '', age: '', gender: '' });
+            return; // Exit the function as we've already booked
+          }
         }
       }
     }
 
-    processBooking(selectedSeat.type, selectedSeat.row, passenger);
-  };
-
-  const showLowerBerthPrompt = () => {
-    return new Promise((resolve) => {
-      const result = window.confirm(
-        "As you are above 40, a lower berth is recommended and available. Would you like to book the lower berth instead?"
-      );
-      resolve(result);
-    });
-  };
-
-  const processBooking = (type, row, passenger) => {
-    const booked = seatTree.bookSeat(type, row, passenger);
-    if (booked) {
-      updateSeatsDisplay();
-      alert(`Seat booked successfully! ${type.toUpperCase()} berth, Row ${row}`);
-    } else {
-      alert('Seat not available!');
-    }
+    // Book in the originally selected seat if no other options were chosen
+    setSeats(prevSeats => ({
+      ...prevSeats,
+      [activeCoach]: {
+        ...prevSeats[activeCoach],
+        [selectedSeat.section]: {
+          ...prevSeats[activeCoach][selectedSeat.section],
+          [selectedSeat.berthType]: passenger
+        }
+      }
+    }));
 
     setShowForm(false);
     setFormData({ name: '', age: '', gender: '' });
@@ -78,73 +194,60 @@ const TrainBooking = () => {
     <div className="train-booking">
       <h1>Train Seat Booking System</h1>
       
-      <div className="seat-container">
-        {['upper', 'middle', 'lower'].map(berthType => (
-          <div key={berthType} className="berth-section">
-            <h3>{berthType.toUpperCase()} BERTH</h3>
-            <div className="row-container">
-              {Array.from(seats.entries()).map(([row, rowSeats]) => (
-                <div 
-                  key={`${berthType}-${row}`}
-                  className={`seat ${rowSeats[berthType].isBooked ? 'booked' : ''}`}
-                  onClick={() => !rowSeats[berthType].isBooked && handleSeatClick(berthType, row)}
-                >
-                  <div>Row {row}</div>
-                  {rowSeats[berthType].isBooked && (
-                    <div className="passenger-info">
-                      {rowSeats[berthType].passenger.name}
-                      <br />
-                      Age: {rowSeats[berthType].passenger.age}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
+      <div className="train-display">
+        {Object.keys(seats).map(coachId => (
+          <div
+            key={coachId}
+            className={`coach-button ${activeCoach === coachId ? 'active' : ''}`}
+            onClick={() => handleCoachClick(coachId)}
+          >
+            Coach {coachId}
           </div>
         ))}
       </div>
 
-      {showForm && (
-        <div className="booking-form">
-          <form onSubmit={handleBooking}>
-            <div>
-              <input
-                type="text"
-                placeholder="Name"
-                value={formData.name}
-                onChange={e => setFormData({...formData, name: e.target.value})}
-                required
-              />
-            </div>
-            <div>
-              <input
-                type="number"
-                placeholder="Age"
-                value={formData.age}
-                onChange={e => setFormData({...formData, age: e.target.value})}
-                required
-                min="1"
-                max="120"
-              />
-            </div>
-            <div>
-              <select
-                value={formData.gender}
-                onChange={e => setFormData({...formData, gender: e.target.value})}
-                required
-              >
-                <option value="">Select Gender</option>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-            <div>
-              <button type="submit">Book Seat</button>
-              <button type="button" onClick={() => setShowForm(false)}>Cancel</button>
-            </div>
-          </form>
+      {activeCoach && (
+        <div>
+          <h2 className="coach-title">Coach {activeCoach}</h2>
+          <div className="compartments-container">
+            {Object.entries(seats[activeCoach]).map(([section, berths]) => (
+              <div key={section} className="compartment-section">
+                <div className="section-title">{activeCoach} ({section})</div>
+                <div className="berth-container">
+                  {['upper', 'middle', 'lower'].map(berthType => (
+                    <div
+                      key={berthType}
+                      className={`seat-box ${berths[berthType] ? 'booked' : ''}`}
+                      onClick={() => !berths[berthType] && handleSeatClick(section, berthType)}
+                    >
+                      {berths[berthType] ? (
+                        <div className="passenger-info">
+                          {berths[berthType].name}<br />
+                          Age: {berths[berthType].age}
+                        </div>
+                      ) : (
+                        berthType
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
+      )}
+
+      {showForm && selectedSeat && (
+        <BookingModal
+          onSubmit={handleBooking}
+          onCancel={() => {
+            setShowForm(false);
+            setFormData({ name: '', age: '', gender: '' });
+          }}
+          selectedSeat={selectedSeat}
+          formData={formData}
+          setFormData={setFormData}
+        />
       )}
     </div>
   );
